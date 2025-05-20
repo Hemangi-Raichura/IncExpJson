@@ -1,3 +1,4 @@
+
 import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -38,41 +39,37 @@ const App: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
- useEffect(() => {
-  const queryParams = new URLSearchParams(location.search);
-  const fromCategory = queryParams.get("category")?.trim();
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const fromCategory = queryParams.get("category")?.trim();
 
-  const saved = localStorage.getItem("webformData");
-
-  if (saved) {
-    const data = JSON.parse(saved);
-    setFields(data);
-    const firstCat = fromCategory || data.find((f: Field) => f.Category.trim())?.Category.trim() || "";
-    setActiveCategory(firstCat);
-    const firstSub = data.find((f: Field) => f.Category.trim() === firstCat && f.SubCategory.trim())?.SubCategory.trim() || "";
-    setActiveSubCategory(firstSub);
-  } else {
-    const API_BASE = "https://apirepo-0bkw.onrender.com";
-
-    fetch(`${API_BASE}/formdata`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.fields) {
-          const initialized = data.fields.map((field: Field) => ({
-            ...field,
-            Value: field.Value ?? (field.IEFType === "N" ? 0 : ""),
-            Frequency: field.Frequency ?? "",
-          }));
-          setFields(initialized);
-          const firstCat = fromCategory || initialized.find((f: Field) => f.Category.trim())?.Category.trim() || "";
-          setActiveCategory(firstCat);
-          const firstSub = initialized.find((f: Field) => f.Category.trim() === firstCat && f.SubCategory.trim())?.SubCategory.trim() || "";
-          setActiveSubCategory(firstSub);
-        }
-      });
-  }
-}, [location.search]);
-
+    const saved = localStorage.getItem("webformData");
+    if (saved) {
+      const data = JSON.parse(saved);
+      setFields(data);
+      const firstCat = fromCategory || data.find((f: Field) => f.Category.trim())?.Category.trim() || "";
+      setActiveCategory(firstCat);
+      const firstSub = data.find((f: Field) => f.Category.trim() === firstCat && f.SubCategory.trim())?.SubCategory.trim() || "";
+      setActiveSubCategory(firstSub);
+    } else {
+      /* fetch("/iefields_render_data.json")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.data) {
+            const initialized = data.data.map((field: Field) => ({
+              ...field,
+              Value: field.Value ?? (field.IEFType === "N" ? 0 : ""),
+              Frequency: field.Frequency ?? "",
+            }));
+            setFields(initialized);
+            const firstCat = fromCategory || initialized.find((f) => f.Category.trim())?.Category.trim() || "";
+            setActiveCategory(firstCat);
+            const firstSub = initialized.find((f) => f.Category.trim() === firstCat && f.SubCategory.trim())?.SubCategory.trim() || "";
+            setActiveSubCategory(firstSub); 
+          }
+        }); */
+    }
+  }, [location.search]);
 
   useEffect(() => {
     if (fields.length > 0) {
@@ -89,24 +86,14 @@ const App: React.FC = () => {
   };
 
   const handleClear = () => {
-  const reset = fields.map((f) => {
-    const matchCategory = f.Category.trim() === activeCategory.trim();
-    const matchSub = activeSubCategory.trim() === "" || f.SubCategory.trim() === activeSubCategory.trim();
-
-    if (matchCategory && matchSub) {
-      return {
-        ...f,
-        Value: "",
-        Value2: "",
-      };
-    }
-    return f;
-  });
-
-  setFields(reset);
-  localStorage.setItem("webformData", JSON.stringify(reset));
-};
-
+    const reset = fields.map((f) => ({
+      ...f,
+      Value: "",
+      Value2: "",
+    }));
+    setFields(reset);
+    localStorage.removeItem("webformData");
+  };
 
   const categoryList = Array.from(new Set(fields.map((f) => f.Category.trim()).filter((cat) => cat !== "")));
   const subCategoryList = Array.from(new Set(fields.filter((f) => f.Category.trim() === activeCategory.trim() && f.SubCategory.trim() !== "").map((f) => f.SubCategory.trim())));
@@ -166,62 +153,7 @@ const App: React.FC = () => {
     }
   };
 
-  /* const renderField = (field: Field) => {
-    const { RowId, Name, IEFType, Lov, Value, Value2, Size, nDecimal } = field;
-const lovOptions = Lov
-  ? Lov.split(",").map((s) => s.trim()).filter((s) => s !== "")
-  : [];
-    if (IEFType === "H") return null;
-    if (IEFType === "D") {
-      return <div key={RowId} className="mb-4"><label className="block text-sm font-normal mb-1">{Name}</label><input type="date" value={Value} onChange={(e) => handleValueChange(RowId, e.target.value)} className="border px-3 py-2 w-full rounded" /></div>;
-    }
-    if (IEFType === "C") {
-      return (
-        <div key={RowId} className="mb-4">
-          <label className="block text-sm font-normal mb-1">{Name}</label>
-          {lovOptions.length > 0 ? (
-            <select value={Value} onChange={(e) => handleValueChange(RowId, e.target.value)} className="border px-3 py-2 w-full rounded">
-              <option value="">Select</option>
-              {lovOptions.map((option, i) => <option key={i} value={option}>{option}</option>)}
-            </select>
-          ) : (
-            <input type="text" value={Value} onChange={(e) => handleValueChange(RowId, e.target.value)} maxLength={Size} className="border px-3 py-2 w-full rounded" />
-          )}
-        </div>
-      );
-    }
-    if (IEFType === "N") {
-  //const step = nDecimal > 0 ? `0.${"0".repeat(nDecimal - 1)}1` : "1";
-  return (
-    <div key={RowId} className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-      <label className="text-sm font-normal">{Name}</label>
-      <input
-  type="number"
-  value={(Value === "" || Value === 0)? "" : Value}
-  onChange={(e) =>
-    handleValueChange(RowId, (e.target.value === "" )? "" : parseFloat(e.target.value))
-  }
-  placeholder={nDecimal > 0 ? "0.00" : "0"}
-  step={nDecimal > 0 ? `0.${"0".repeat(nDecimal - 1)}1` : "1"}
-  className="border rounded px-2 py-1 text-sm w-full"
-/>
-
-      <select
-        value={Value2}
-        onChange={(e) => handleFrequencyChange(RowId, e.target.value)}
-        className="border px-3 py-2 w-full rounded"
-      >
-        <option value="">Select</option>
-        {frequencyOptions.map((freq) => (
-          <option key={freq}>{freq}</option>
-        ))}
-      </select>
-    </div>
-  );
-}
-return null;
-
-  }; */
+  
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">

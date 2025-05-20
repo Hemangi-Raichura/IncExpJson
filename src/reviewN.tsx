@@ -45,13 +45,23 @@ const ReviewPage: React.FC = () => {
     })
     .then(() => {
       alert("Form successfully submitted to API!");
-      navigate("/App2"); // ✅ or redirect anywhere you want
+      
+      // Optionally save only RowId, Value, Value2 if you want lightweight storage
+      const minimalData = fields.map(f => ({
+        RowId: f.RowId,
+        Value: f.Value,
+        Value2: f.Value2
+      }));
+      
+      localStorage.setItem("submissionOutput", JSON.stringify(minimalData)); // 🔁 Use a separate key for output
+      navigate("/jsonoutput"); // ✅ Redirect to output page
     })
     .catch((err) => {
       console.error("Submission failed:", err);
       alert("Submission failed. Please try again.");
     });
 };
+
 
 
   const getPlaceholder = (f: Field): string => {
@@ -78,7 +88,7 @@ const ReviewPage: React.FC = () => {
           <div className="flex justify-between items-center bg-blue-100 px-4 py-2">
             <h2 className="text-xl font-semibold">{cat}</h2>
             <button
-              onClick={() => navigate(`/?category=${encodeURIComponent(cat)}`)}
+              onClick={() => navigate(`/App2/?category=${encodeURIComponent(cat)}`)}
               className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
             >
               Edit
