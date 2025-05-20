@@ -86,14 +86,21 @@ const App: React.FC = () => {
   };
 
   const handleClear = () => {
-    const reset = fields.map((f) => ({
-      ...f,
-      Value: "",
-      Value2: "",
-    }));
-    setFields(reset);
-    localStorage.removeItem("webformData");
-  };
+  const reset = fields.map((f) => {
+    const isInActiveCategory = f.Category.trim() === activeCategory.trim();
+    const isInActiveSubCategory =
+      !activeSubCategory || f.SubCategory.trim() === activeSubCategory.trim();
+
+    if (isInActiveCategory && isInActiveSubCategory) {
+      return { ...f, Value: "", Value2: "" };
+    }
+    return f;
+  });
+
+  setFields(reset);
+  localStorage.setItem("webformData", JSON.stringify(reset));
+};
+
 
   const categoryList = Array.from(new Set(fields.map((f) => f.Category.trim()).filter((cat) => cat !== "")));
   const subCategoryList = Array.from(new Set(fields.filter((f) => f.Category.trim() === activeCategory.trim() && f.SubCategory.trim() !== "").map((f) => f.SubCategory.trim())));
@@ -238,16 +245,41 @@ const App: React.FC = () => {
     case "N":
   //const step = nDecimal > 0 ? `0.${"0".repeat(nDecimal - 1)}1` : "1";
   return (
-    <input
-  type="number"
-  value={(Value === "" || Value === 0 )? "" : Value}
-  onChange={(e) =>
-    handleValueChange(RowId, e.target.value === "" ? "" : parseFloat(e.target.value))
-  }
-  placeholder={nDecimal > 0 ? "0.00" : "0"}
-  step={nDecimal > 0 ? `0.${"0".repeat(nDecimal - 1)}1` : "1"}
+  <input
+  type="text"
+  inputMode="decimal"
+  value={Value}
+  onChange={(e) => {
+    const input = e.target.value;
+
+    // Allow empty value
+    if (input === "") {
+      handleValueChange(RowId, "");
+      return;
+    }
+
+    // 🚫 When nDecimal === 0: only digits, no dot
+    if (nDecimal === 0) {
+      // Only allow digits; stop immediately on any non-digit
+      const valid = /^\d+$/.test(input);
+      if (valid) {
+        handleValueChange(RowId, input);
+      }
+      return;
+    }
+
+    // ✅ When nDecimal > 0: allow up to `nDecimal` digits after dot
+    const decimalRegex = new RegExp(`^\\d*(\\.\\d{0,${nDecimal}})?$`);
+    if (decimalRegex.test(input)) {
+      handleValueChange(RowId, input);
+    }
+  }}
+  placeholder={nDecimal === 0 ? "Whole number only" : `e.g. 0.${"0".repeat(nDecimal)}`}
   className="border rounded px-2 py-1 text-sm w-full"
 />
+
+
+
 
   );
 

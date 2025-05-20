@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-const API_BASE = "https://apirepo-0bkw.onrender.com"; // 🔁 Replace with your deployed API base
+//const API_BASE = "https://apirepo-0bkw.onrender.com"; // 🔁 Replace with your deployed API base
 
 
 interface Field {
@@ -34,34 +34,26 @@ const ReviewPage: React.FC = () => {
   }
 
   const handleSubmitToAPI = () => {
-  fetch(`${API_BASE}/submissions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fields),
-  })
-    .then((res) => {
-      if (!res.ok) throw new Error("Failed to submit");
-      return res.json();
-    })
-    .then(() => {
-      alert("Form successfully submitted to API!");
-      
-      // Optionally save only RowId, Value, Value2 if you want lightweight storage
-      const minimalData = fields.map(f => ({
-        RowId: f.RowId,
-        Value: f.Value,
-        Value2: f.Value2
-      }));
-      
-      localStorage.setItem("submissionOutput", JSON.stringify(minimalData)); // 🔁 Use a separate key for output
-      navigate("/jsonoutput"); // ✅ Redirect to output page
-    })
-    .catch((err) => {
-      console.error("Submission failed:", err);
-      alert("Submission failed. Please try again.");
-    });
-};
+  const minimalData = fields.map(f => ({
+    RowId: f.RowId,
+    Value: f.Value,
+    Value2: f.Value2
+  }));
 
+  // Save for table display
+  localStorage.setItem("submissionOutput", JSON.stringify(minimalData));
+
+  // Also save full JSON string for display/download
+  const blob = new Blob([JSON.stringify(minimalData, null, 2)], {
+    type: "application/json"
+  });
+
+  const jsonUrl = URL.createObjectURL(blob);
+  localStorage.setItem("jsonOutputBlobUrl", jsonUrl);
+
+  // Navigate to the output page
+  navigate("/jsonOutputPage");
+};
 
 
   const getPlaceholder = (f: Field): string => {
