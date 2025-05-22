@@ -38,6 +38,9 @@ const App: React.FC = () => {
   const [activeSubCategory, setActiveSubCategory] = useState<string>("");
   const navigate = useNavigate();
   const location = useLocation();
+  const [frozenMap, setFrozenMap] = useState<Record<number, boolean>>({});
+ 
+
 
   useEffect(() => {
     const queryParams = new URLSearchParams(location.search);
@@ -245,38 +248,62 @@ const App: React.FC = () => {
     case "N":
   //const step = nDecimal > 0 ? `0.${"0".repeat(nDecimal - 1)}1` : "1";
   return (
-  <input
+  
+<input
   type="text"
   inputMode="decimal"
   value={Value}
   onChange={(e) => {
     const input = e.target.value;
-
-    // Allow empty value
+    
+    // Allow empty input
     if (input === "") {
+      setFrozenMap((prev) => ({ ...prev, [RowId]: false }));
       handleValueChange(RowId, "");
       return;
     }
 
-    // 🚫 When nDecimal === 0: only digits, no dot
-    if (nDecimal === 0) {
-      // Only allow digits; stop immediately on any non-digit
-      const valid = /^\d+$/.test(input);
-      if (valid) {
-        handleValueChange(RowId, input);
-      }
+    // Freeze on illegal decimal input when nDecimal === 0
+    if (nDecimal === 0 && input.includes(".")) {
+      setFrozenMap((prev) => ({ ...prev, [RowId]: true }));
       return;
     }
 
-    // ✅ When nDecimal > 0: allow up to `nDecimal` digits after dot
-    const decimalRegex = new RegExp(`^\\d*(\\.\\d{0,${nDecimal}})?$`);
-    if (decimalRegex.test(input)) {
+    // For decimal fields, validate based on allowed places
+    if (nDecimal > 0) {
+      const decimalRegex = new RegExp(`^\\d*(\\.\\d{0,${nDecimal}})?$`);
+      if (!decimalRegex.test(input)) return;
+    }
+
+    // Accept digits only if decimals not allowed
+    if (nDecimal === 0 && /^\d*$/.test(input)) {
       handleValueChange(RowId, input);
+      return;
+    }
+
+    handleValueChange(RowId, input);
+  }}
+  onKeyDown={(e) => {
+    const isFrozen = frozenMap[RowId] || false;
+
+    // Block all input when frozen, except backspace/delete
+    if (isFrozen && !["Backspace", "Delete"].includes(e.key)) {
+      e.preventDefault();
+    }
+
+    // Unfreeze once dot is deleted
+    if (["Backspace", "Delete"].includes(e.key)) {
+      const valAfter = Value.slice(0, -1);
+      if (!valAfter.includes(".")) {
+        setFrozenMap((prev) => ({ ...prev, [RowId]: false }));
+      }
     }
   }}
   placeholder={nDecimal === 0 ? "Whole number only" : `e.g. 0.${"0".repeat(nDecimal)}`}
-  className="border rounded px-2 py-1 text-sm w-full"
+  className={`border rounded px-2 py-1 text-sm w-full transition-all duration-150
+    ${frozenMap[RowId] ? "border-red-500 bg-red-100 placeholder:text-red-500" : "border-gray-300"}`}
 />
+
 
 
 

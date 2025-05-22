@@ -15,7 +15,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
    
   <React.StrictMode>
     <FormDataProvider>
-  <BrowserRouter basename="/my-demo-app">
+  <BrowserRouter basename="/my-demo-app-Variant">
     <Routes>
       
      
