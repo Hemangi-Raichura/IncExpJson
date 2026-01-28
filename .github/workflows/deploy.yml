@@ -6,10 +6,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - - name: Checkout
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: false # <--- This tells the robot to ignore the ghost submodule
+          submodules: false # This forces the robot to ignore the ghost submodule
       - name: Install and Build
         run: |
           npm install
